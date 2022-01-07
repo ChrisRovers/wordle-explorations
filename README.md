@@ -12,3 +12,9 @@ I intend to do some testing, using a random word list and a list sorted by "best
 
 The dictionary I used was the TWL06 list
 
+The "best" list creator currently uses the following algorithm, which I just made up - all things arbitrary:
+    For every 5 letter word:
+        - go through each letter. Get 3 points for every OTHER word that has the same letter in the same position. Get 1 point for every OTHER word that has the same letter in a different position
+        - if the word has duplicate letters in it, halve its score (intended to optimize the information you get out of your first guess)
+
+
