@@ -1,12 +1,16 @@
 import random
 import sys
 
+bestwords = []
 words = []
 badletters = []
 positionsknown = []
 contained = []
 previousguesses = []
 badposletter = []
+
+verbose = False
+quiet = False
 
 def getGuess(lastguess,answer):
     # evaluate our last guess
@@ -31,9 +35,10 @@ def getGuess(lastguess,answer):
                 badletters.append(letter)
         pos = pos + 1
 
-    print("I know these positions: "+str(positionsknown))
-    print("I know these letters were bad"+str(badletters))
-    print("I know I need these letters: "+str(contained))
+    if (verbose):
+        print("I know these positions: "+str(positionsknown))
+        print("I know these letters were bad"+str(badletters))
+        print("I know I need these letters: "+str(contained))
 
     for word in words:
         if word in previousguesses:
@@ -65,36 +70,112 @@ def getGuess(lastguess,answer):
     print("I knew these words were wrong"+str(previousguesses))
     quit()
 
-#with open("bestwords.csv") as file:
-with open("randomwords.csv") as file:
+def solve(answer):
+
+    badletters.clear()
+    positionsknown.clear()
+    contained.clear()
+    previousguesses.clear()
+    badposletter.clear()
+    goes = 0
+       
+    guess = ""
+    lastguess = ""
+    while (guess != answer):
+        guess = getGuess(lastguess,answer)
+        if (not quiet):
+            print("Guessing "+guess) 
+        lastguess = guess
+        previousguesses.append(lastguess)
+        goes = goes + 1 
+
+    if (not quiet):
+        print("Found the answer in "+str(goes)+ " tries.")
+    return goes
+
+
+with open("bestwords.csv") as file:
     wordtemp = file.readlines()
     counter = 0
     for wordline in wordtemp:
         counter = counter + 1
-        #if (counter > 500):
-        #    break
         (word,temp) = wordline.split(",")
         word = word.rstrip()
         word = word.lower()
-        words.append(word)
-
+        bestwords.append(word)
 
 if (len(sys.argv) == 1):
-    answer = random.choice(words)
+    search = random.choice(bestwords)
 else:
-    answer = sys.argv[1].strip()
+    search = sys.argv[1].strip()
 
-print("It will be hunting "+answer)
+searchlist = []
+if (search == "ALL"):
+    for word in bestwords:
+        searchlist.append(word)
+    random.shuffle(searchlist)
+    quiet = True
+else:
+    searchlist.append(search)
 
-goes = 0
-   
-guess = ""
-lastguess = ""
-while (guess != answer):
-    guess = getGuess(lastguess,answer)
-    print("Guessing "+guess) 
-    lastguess = guess
-    previousguesses.append(lastguess)
-    goes = goes + 1 
+output = []
 
-print("Found the answer in "+str(goes)+ " tries.")
+for answer in searchlist:
+    if (not quiet):
+        print("Searching for "+answer)
+
+    if (not quiet):
+        print("Using bestwords")
+    words.clear()
+    for word in bestwords:
+        words.append(word)
+    bestwordresult = solve(answer);
+
+    if (not quiet):
+        print("Using randomwords")
+    count = 1
+    sum = 0.0
+    if (len(searchlist)>1):
+        count = 5
+    for i in range(count):
+        words.clear()
+        for word in bestwords:
+            words.insert(0,word)
+        random.shuffle(words)
+        sum = sum + solve(answer)
+    randomwordresult = sum / count 
+        
+
+    if (not quiet):
+        print("Using most vowels then random")
+    count = 1
+    sum = 0.0
+    if (len(searchlist)>1):
+        count = 5
+    for i in range(count):
+        words.clear()
+        for word in bestwords:
+            words.insert(0,word)
+        random.shuffle(words)
+        words.insert(0,'audio')
+        sum = sum + solve(answer)
+    vowelrandomresult = sum / count
+
+    if (not quiet):
+        print("Using most vowels then best word")
+    words.clear()
+    for word in bestwords:
+        words.append(word)
+    words.insert(0,'audio')
+    vowelbestwordresult = solve(answer)
+
+    outstr = answer+","+str(bestwordresult)+","+str(randomwordresult)+","+str(vowelrandomresult)+","+str(vowelbestwordresult)
+    print(outstr)
+    output.append(outstr)
+
+
+with open("experiments.csv","w") as file:
+    file.write("Word,BestWordListResult,RandomWordListResult,AUDIOThenRandomWordsResult,AUDIOThenBestWordsResult\n")
+    for outstr in output:
+        file.write(outstr+"\n")
+    file.close()
