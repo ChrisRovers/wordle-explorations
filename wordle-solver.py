@@ -2,6 +2,7 @@ import random
 import sys
 
 bestwords = []
+elimbestwords = []
 words = []
 badletters = []
 positionsknown = []
@@ -104,6 +105,16 @@ with open("bestwords.csv") as file:
         word = word.lower()
         bestwords.append(word)
 
+with open("bestelimwords.csv") as file:
+    wordtemp = file.readlines()
+    counter = 0
+    for wordline in wordtemp:
+        counter = counter + 1
+        (word,temp) = wordline.split(",")
+        word = word.rstrip()
+        word = word.lower()
+        elimbestwords.append(word)
+
 if (len(sys.argv) == 1):
     search = random.choice(bestwords)
 else:
@@ -120,7 +131,17 @@ else:
 
 output = []
 
+percent = 0
+chunk = len(searchlist) // 100
+chunkcount = 0
+overallcount = 0
 for answer in searchlist:
+    chunkcount = chunkcount +1
+    overallcount = overallcount +1
+    if (chunkcount >= chunk):    
+        percent = percent+1
+        print(str(overallcount)+" = "+str(percent)+"% done, currently looking at "+answer)
+        chunkcount = 0
     if (not quiet):
         print("Searching for "+answer)
 
@@ -169,13 +190,28 @@ for answer in searchlist:
     words.insert(0,'audio')
     vowelbestwordresult = solve(answer)
 
-    outstr = answer+","+str(bestwordresult)+","+str(randomwordresult)+","+str(vowelrandomresult)+","+str(vowelbestwordresult)
-    print(outstr)
+    if (not quiet):
+        print("Using the elim ranked best words")
+    words.clear()
+    for word in elimbestwords:
+        words.append(word)
+    elimbestwordresult = solve(answer) 
+
+    if (not quiet):
+        print("Using the worst words")
+    words.clear()
+    for word in elimbestwords:
+        words.insert(0,word)
+    worstwordresult = solve(answer) 
+    outstr = answer+","+str(bestwordresult)+","+str(randomwordresult)+","+str(vowelrandomresult)+","+str(vowelbestwordresult)+","+str(elimbestwordresult)+","+str(worstwordresult)
+    if not (quiet):
+        print("Word,BestWordListResult,RandomWordListResult,AUDIOThenRandomWordsResult,AUDIOThenBestWordsResult,ElimBestWordResult,WorstWordResult")
+        print(outstr)
     output.append(outstr)
 
 
 with open("experiments.csv","w") as file:
-    file.write("Word,BestWordListResult,RandomWordListResult,AUDIOThenRandomWordsResult,AUDIOThenBestWordsResult\n")
+    file.write("Word,BestWordListResult,RandomWordListResult,AUDIOThenRandomWordsResult,AUDIOThenBestWordsResult,ElimBestWordResult,WorstWordResult\n")
     for outstr in output:
         file.write(outstr+"\n")
     file.close()
